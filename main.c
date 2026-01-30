@@ -13,8 +13,7 @@ int main (){
     int server_fd, new_socket;
     struct sockaddr_in address;
     ssize_t valread;
-    char* hello = "test";
-    int addrlen = sizeof(address);
+    socklen_t addrlen = sizeof(address);
     char buffer[BUFFER_SIZE] = {0};
 
 
@@ -43,20 +42,37 @@ int main (){
         exit(EXIT_FAILURE);
     }
 
-    if((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0) {
-        perror("accept");
-        exit(EXIT_FAILURE);
+    while (1)
+    {
+        printf("Wait...\n");
+
+        if ((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0) {
+            perror("accept");
+            continue;
+        }
+
+        memset(buffer, 0, BUFFER_SIZE);
+
+        while ((valread = read(new_socket, buffer, BUFFER_SIZE - 1)) > 0) {
+            buffer[valread] = '\0';
+            printf("> %s\n", buffer);
+        }
+
+        if (valread < 0) {
+            perror("read failed");
+            close(new_socket);
+            continue;
+        }
+
+        char* reply = "MTS";
+        send(new_socket, reply, strlen(reply), 0);
+
+        close(new_socket);
+
+
     }
-    valread = read(new_socket, buffer, 1024 - 1);
+    
 
-    printf("%s\n", buffer);
-
-    send(new_socket, hello, strlen(hello), 0);
-    printf("Hello message sent\n");
-
-    // closing the connected socket
-    close(new_socket);
-    // closing the listening socket
     close(server_fd);
     return 0;
 }
